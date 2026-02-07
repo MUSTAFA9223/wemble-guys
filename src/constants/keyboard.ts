@@ -26,3 +26,4 @@ export const keyboard = createKeyboardMap([
 ] as const);
 
 export type KeyboardControlsAction = (typeof keyboard.const)[number]["name"];
+export type ButtonControlsAction = Exclude<KeyboardControlsAction,"forward"|"backward"|"left"|"right">

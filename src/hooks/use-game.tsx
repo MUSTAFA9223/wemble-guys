@@ -1,4 +1,4 @@
-import { NEXT_STAGE, TIMER_STAGE, type StageKeyType } from "@/constants";
+import { NEXT_STAGE, TIMER_STAGE, type ButtonControlsAction, type StageKeyType } from "@/constants";
 import {
   isHost,
   Joystick,
@@ -8,6 +8,7 @@ import {
   type PlayerState,
 } from "playroomkit";
 import React from "react";
+import type { Vector, Rotation } from "@dimforge/rapier3d-compat";
 
 type GameContextType = {
   stage: StageKeyType;
@@ -27,13 +28,26 @@ const GameContext = React.createContext<GameContextType>({
   startGame: () => new Error("GameContext: Game is not initialized!"),
 });
 
-type Props = {
-  children: React.ReactNode;
+type PlayerStateKeyMap = {
+  pos: Vector;
+  rot: Rotation;
 };
 
+export interface GameJoyStick extends Joystick {
+  isPressed: (id: ButtonControlsAction) => boolean;
+}
+export interface GamePlayerState extends PlayerState {
+  getState<K extends keyof PlayerStateKeyMap>(key: K): PlayerStateKeyMap[K] | undefined;
+  setState<K extends keyof PlayerStateKeyMap>(key: K,value:PlayerStateKeyMap[K]): void;
+}
+
 type Player = {
-  state: PlayerState;
-  controls: Joystick;
+  state: GamePlayerState;
+  controls: GameJoyStick;
+};
+
+type Props = {
+  children: React.ReactNode;
 };
 
 export const GameProvider = ({ children }: Props) => {

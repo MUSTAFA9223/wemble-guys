@@ -9,7 +9,7 @@ import { DracoPath, HexagonGLB } from "@/assets";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { randFloat } from "three/src/math/MathUtils.js";
 import React from "react";
-import { RapierRigidBody, RigidBody, type RigidBodyProps } from "@react-three/rapier";
+import { RigidBody, type RigidBodyProps } from "@react-three/rapier";
 
 type GLTFResult = ReturnType<typeof useGLTF> & {
   nodes: {
@@ -25,9 +25,7 @@ type Props = RigidBodyProps & {
 };
 
 export const Hexagon = ({ color, ...props }: Props) => {
-  const rb = React.useRef<RapierRigidBody>(null);
-
-  const { nodes, materials } = useGLTF(HexagonGLB, "draco/gltf/", true, (loader) =>
+  const { nodes, materials } = useGLTF(HexagonGLB, DracoPath, true, (loader) =>
     loader.setMeshoptDecoder(MeshoptDecoder),
   ) as GLTFResult;
 
@@ -38,14 +36,7 @@ export const Hexagon = ({ color, ...props }: Props) => {
   }, [color]);
 
   return (
-    <RigidBody
-      ref={rb}
-      type="fixed"
-      colliders="hull"
-      enabledRotations={[false, true, false]}
-      canSleep={false}
-      {...props}
-    >
+    <RigidBody type="fixed" colliders="hull" {...props}>
       <mesh geometry={nodes.Hexagon.geometry} material={materials.hexagon}>
         <meshStandardMaterial {...materials.hexagon} color={randomizedColor} transparent />
       </mesh>
