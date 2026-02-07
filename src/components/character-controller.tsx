@@ -40,20 +40,16 @@ export const CharacterController = ({
   state,
   ...props
 }: Props) => {
+  const isDead = state.getState("dead"); // BUG: check dead state early
   const [animation, setAnimation] = React.useState<CharacterActionName>("idle");
-
   const rb = React.useRef<RapierRigidBody>(null);
   const cameraPos = React.useRef<THREE.Group>(null);
-
-  const cameraLookAt = React.useRef<THREE.Vector3>(null);
+  const cameraLookAt = React.useRef<THREE.Vector3>(new THREE.Vector3()); // BUG: init vector to avoid null errors
 
   const inAir = React.useRef(true);
   const landed = React.useRef(false);
-
   const [, get] = useKeyboardControls<KeyboardControlsAction>();
-
   const characterVel = React.useMemo(() => new THREE.Vector3(), []);
-
   const animationRef = React.useRef<CharacterActionName>("idle");
 
   const updateAnimation = React.useCallback((action: CharacterActionName) => {
@@ -66,146 +62,115 @@ export const CharacterController = ({
 
   useFrame(({ camera }) => {
     const character = rb.current;
-    const cameraPosition = cameraPos.current;
-    if (!character || stage !== "game" || !cameraPosition) return;
+    if (!character || isDead) return; // BUG: if dead, don't run physics/camera logic
 
-    // other character as per there position and rotation
+    // 1. REMOTE PLAYER LOGIC
     if (!player) {
       const pos = state.getState("pos");
       const rot = state.getState("rot");
-      if (pos) {
-        character.setTranslation(pos, true);
-      }
-      if (rot) {
-        character.setRotation(rot, true);
-      }
+      if (pos) character.setTranslation(pos, true);
+      if (rot) character.setRotation(rot, true);
 
       const action = state.getState("animation");
-      if (!action) return;
-      updateAnimation(action);
+      if (action) updateAnimation(action);
       return;
     }
 
-    //if you are the character
-    const characterPosition = vec3(character.translation());
-    if (!cameraLookAt.current) {
-      cameraLookAt.current = characterPosition;
+    // 2. CAMERA LOGIC (LOCAL PLAYER ONLY)
+    if (stage === "game" || stage === "countdown") {
+      const characterPosition = vec3(character.translation());
+      cameraLookAt.current.lerp(characterPosition, 0.1); // BUG: smoothed lerp
+
+      const target = new THREE.Vector3().copy(cameraLookAt.current).add(new THREE.Vector3(0, 1, 0));
+      camera.lookAt(target);
+
+      if (cameraPos.current) {
+        const worldPosition = new THREE.Vector3();
+        cameraPos.current.getWorldPosition(worldPosition);
+        camera.position.lerp(worldPosition, 0.1);
+      }
     }
-    cameraLookAt.current.lerp(characterPosition, 0.03);
-    const lookOffset = new THREE.Vector3(0, 2, 0); // look 1.5 units above character
-    const target = new THREE.Vector3().copy(characterPosition).add(lookOffset);
-    camera.lookAt(target);
-    const worldPosition = characterPosition;
-    cameraPosition.getWorldPosition(worldPosition);
-    camera.position.lerp(worldPosition, 0.03);
 
-    characterVel.set(0, 0, 0);
+    if (stage !== "game") return;
 
+    // 3. MOVEMENT LOGIC
     const { forward, backward, hi, jump, left, right } = get();
     const interacted = controls.isJoystickPressed();
-    const rotVel = {
-      x: 0,
-      y: 0,
-      z: 0,
-    };
-
+    const rotVel = { x: 0, y: 0, z: 0 };
     const curVel = character.linvel();
-    characterVel.x = 0;
-    characterVel.y = 0;
-    characterVel.z = 0;
+
+    characterVel.set(0, 0, 0);
 
     const angle = controls.angle();
     const joyX = Math.sin(angle);
     const joyY = Math.cos(angle);
 
-    if (forward || (interacted && joyY < -idleThreshold)) {
-      characterVel.z += MOVEMENT_SPEED;
-    }
-    if (backward || (interacted && joyY > idleThreshold)) {
-      characterVel.z -= MOVEMENT_SPEED;
-    }
-    if (left || (interacted && joyX < -idleThreshold)) {
-      rotVel.y += MOVEMENT_SPEED;
-    }
-    if (right || (interacted && joyX > idleThreshold)) {
-      rotVel.y -= MOVEMENT_SPEED;
-    }
+    if (forward || (interacted && joyY < -idleThreshold)) characterVel.z += MOVEMENT_SPEED;
+    if (backward || (interacted && joyY > idleThreshold)) characterVel.z -= MOVEMENT_SPEED;
+    if (left || (interacted && joyX < -idleThreshold)) rotVel.y += MOVEMENT_SPEED;
+    if (right || (interacted && joyX > idleThreshold)) rotVel.y -= MOVEMENT_SPEED;
+
     character.setAngvel(rotVel, true);
     const eulerRot = euler().setFromQuaternion(quat(character.rotation()));
     characterVel.applyEuler(eulerRot);
 
+    // Jump Logic
     if ((jump || controls.isPressed("jump")) && !inAir.current && landed.current) {
-      characterVel.y += JUMP_FORCE;
+      characterVel.y = JUMP_FORCE;
       inAir.current = true;
       landed.current = false;
     } else {
       characterVel.y = curVel.y;
     }
 
-    if (Math.abs(characterVel.y) > 1) {
-      inAir.current = true;
-      landed.current = false;
-    } else {
-      inAir.current = false;
-    }
+    // Air state check
+    inAir.current = Math.abs(characterVel.y) > 0.1; // BUG: lowered threshold for sensitivity
+
     character.setLinvel(characterVel, true);
     state.setState("pos", character.translation());
     state.setState("rot", character.rotation());
 
-    // animating the character body
+    // 4. ANIMATION LOGIC
+    let nextAnim: CharacterActionName = "idle";
     const movement = Math.abs(characterVel.x) + Math.abs(characterVel.z);
 
-    const midAir = inAir.current;
-    let animation: CharacterActionName = "idle";
-    if (midAir && characterVel.y > 2) {
-      animation = "jump_up";
-    } else if (midAir && characterVel.y < 5) {
-      animation = "fall";
-    } else if (movement > 1 || midAir) {
-      animation = "run";
-    } else if (hi || controls.isPressed("hi")) {
-      animation = "wave";
-    }
+    if (inAir.current && characterVel.y > 0.5) nextAnim = "jump_up";
+    else if (inAir.current && characterVel.y < -0.5) nextAnim = "fall";
+    else if (movement > 0.1) nextAnim = "run";
+    else if (hi || controls.isPressed("hi")) nextAnim = "wave";
 
-    updateAnimation(animation);
-    state.setState("animation", animation);
+    updateAnimation(nextAnim);
+    state.setState("animation", nextAnim);
 
+    // 5. DEATH LOGIC
     if (character.translation().y < -FLOOR_HEIGHT * FLOORS.length && !state.getState("dead")) {
       state.setState("dead", true);
       setState("lastDead", state.getProfile(), true);
       playAudio(DeadMP3, true);
-      playAudio("Dead", true);
     }
   });
 
   const startingPos = state.getState("startingPos");
-  if (!startingPos) return null;
+  if (!startingPos || isDead) return null; // BUG: hide character immediately if dead or no pos
 
   return (
     <RigidBody
       ref={rb}
       {...props}
-      position-x={stage === "game" ? startingPos.x : 0}
-      position-z={stage === "game" ? startingPos.z : 0}
+      key={stage}
+      position={stage === "game" ? [startingPos.x, 0.5, startingPos.z] : [0, 2.3, 0]} // BUG: set full position array
       colliders={false}
       enabledRotations={[false, true, false]}
-      canSleep={false}
       gravityScale={stage === "game" ? 2.5 : 0}
       name={player ? "player" : "other"}
       onCollisionEnter={(e) => {
-        const otherObject = e.other.rigidBodyObject;
-        const character = rb.current;
-        if (!otherObject || !character) return;
-        if (otherObject.name === "hexagon") {
+        if (e.other.rigidBodyObject?.name === "hexagon") {
           inAir.current = false;
           landed.current = true;
-          const curVel = character.linvel();
-          curVel.y = 0;
-          character.setLinvel(curVel, true);
         }
       }}
     >
-      <CapsuleCollider args={[0.1, 0.31]} position={[0, 0.43, -0.017]} />
+      <CapsuleCollider args={[0.1, 0.31]} position={[0, 0.43, 0]} />
       <group ref={cameraPos} position={[0, 4, -8]} />
       <Character
         animation={animation}

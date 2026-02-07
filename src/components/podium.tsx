@@ -23,7 +23,11 @@ export const Podium = () => {
 
   return (
     <group>
-      <Character name={winnerProfile?.name} color={winnerProfile?.color?.hexString} position-y={0.5} />
+      <Character
+        name={winnerProfile?.name}
+        color={winnerProfile?.color?.hexString}
+        position-y={0.5}
+      />
       <Box scale-x={4} scale-z={2}>
         <meshStandardMaterial color="white" />
       </Box>

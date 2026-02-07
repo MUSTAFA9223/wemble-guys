@@ -67,6 +67,8 @@ type Props = {
   children: React.ReactNode;
 };
 
+// ... imports remains the same
+
 export const GameProvider = ({ children }: Props) => {
   const init = React.useRef(false);
   const host = isHost();
@@ -74,9 +76,9 @@ export const GameProvider = ({ children }: Props) => {
 
   const [players, setPlayers] = React.useState<Player[]>([]);
   const [soloGame, setSoloGame] = React.useState(false);
-  const [winner, setWinner] = React.useState<ReturnType<GamePlayerState["getProfile"]>>(
-    me.getProfile(),
-  );
+
+  // BUG: winner was local state. Fixed: used useMultiplayerState so everyone sees the same winner.
+  const [winner, setWinner] = useMultiplayerState<any>("winner", me?.getProfile());
 
   const [stage, setStage] = useMultiplayerState<StageKeyType>("gameStage", "lobby");
   const [timer, setTimer] = useMultiplayerState<number>("timer", TIMER_STAGE.lobby);
@@ -84,8 +86,7 @@ export const GameProvider = ({ children }: Props) => {
   const startGame = () => {
     setStage("countdown");
     setTimer(TIMER_STAGE.countdown);
-    if (players.length !== 1) return;
-    setSoloGame(true);
+    setSoloGame(players.length === 1); // BUG: simplified check
   };
 
   React.useEffect(() => {
@@ -93,6 +94,7 @@ export const GameProvider = ({ children }: Props) => {
 
     const timeout = setTimeout(() => {
       let newTime = stage === "game" ? timer + 1 : timer - 1;
+
       if (newTime === 0) {
         const nextStage = NEXT_STAGE[stage];
         if (nextStage === "lobby") {
@@ -107,12 +109,14 @@ export const GameProvider = ({ children }: Props) => {
       } else {
         if (stage === "game") {
           const playersAlive = players.filter((p) => !p.state.getState("dead"));
+
+          // BUG: Logic was slightly off for solo vs multi.
           if (playersAlive.length <= (soloGame ? 0 : 1)) {
-            setStage("winner");
+            setStage("winner", true); // BUG: must pass 'true' to broadcast immediately
             if (playersAlive.length === 1) {
-              setWinner(playersAlive[0].state.getProfile());
+              setWinner(playersAlive[0].state.getProfile(), true); // BUG: broadcast winner profile
             } else {
-              setWinner(getState("lastDead"));
+              setWinner(getState("lastDead"), true); // BUG: last person to fall wins if everyone fell
             }
             newTime = TIMER_STAGE.winner;
           }
@@ -120,10 +124,8 @@ export const GameProvider = ({ children }: Props) => {
       }
       setTimer(newTime, true);
     }, 1000);
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, [host, timer, stage, soloGame]);
+    return () => clearTimeout(timeout);
+  }, [host, timer, stage, soloGame, players]); // BUG: added players to dependency
 
   React.useEffect(() => {
     if (init.current) return;
@@ -135,7 +137,8 @@ export const GameProvider = ({ children }: Props) => {
           { id: "jump", label: "Jump" },
           { id: "hi", label: "Wave" },
         ],
-      });
+      }) as GameJoyStick;
+
       const newPlayer = { state, controls };
 
       if (host) {
@@ -149,25 +152,15 @@ export const GameProvider = ({ children }: Props) => {
         });
       }
 
-      setPlayers((players) => [...players, newPlayer]);
+      setPlayers((prev) => [...prev, newPlayer]);
       state.onQuit(() => {
-        setPlayers((players) => players.filter((p) => p.state.id !== state.id));
+        setPlayers((prev) => prev.filter((p) => p.state.id !== state.id));
       });
     });
-  }, []);
+  }, [host, stage]);
 
   return (
-    <GameContext.Provider
-      value={{
-        stage,
-        timer,
-        host,
-        players,
-        winner,
-        startGame,
-        me,
-      }}
-    >
+    <GameContext.Provider value={{ stage, timer, host, players, winner, startGame, me }}>
       {children}
     </GameContext.Provider>
   );
