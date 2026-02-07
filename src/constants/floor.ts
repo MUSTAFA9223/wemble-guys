@@ -16,3 +16,4 @@ export const FLOORS = [
   },
 ] as const;
 export const FLOOR_HEIGHT = 10;
+export const TIME_AFTER_DISAPPEAR = 600;

@@ -20,10 +20,13 @@ export const keyboard = createKeyboardMap([
   { name: "backward", keys: ["ArrowDown", "KeyS"] },
   { name: "left", keys: ["ArrowLeft", "KeyA"] },
   { name: "right", keys: ["ArrowRight", "KeyD"] },
-  { name: "run", keys: ["Shift"] },
+  // { name: "run", keys: ["Shift"] },
   { name: "jump", keys: ["Space"] },
   { name: "hi", keys: ["Enter", "KeyF"] },
 ] as const);
 
 export type KeyboardControlsAction = (typeof keyboard.const)[number]["name"];
-export type ButtonControlsAction = Exclude<KeyboardControlsAction,"forward"|"backward"|"left"|"right">
+export type ButtonControlsAction = Exclude<
+  KeyboardControlsAction,
+  "forward" | "backward" | "left" | "right"
+>;

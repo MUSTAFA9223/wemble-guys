@@ -10,6 +10,7 @@ import Pop3MP3 from "./audios/pop3.mp3";
 import Pop4MP3 from "./audios/pop4.mp3";
 import Pop5MP3 from "./audios/pop5.mp3";
 import MedievalCafeHDR from "./hdrs/medieval_cafe_1k.hdr";
+import PaytoneOneRegularTTF from "./fonts/PaytoneOne-Regular.ttf";
 
 export const DracoPath = "draco/gltf/";
 export {
@@ -25,4 +26,5 @@ export {
   Pop4MP3,
   Pop5MP3,
   MedievalCafeHDR,
+  PaytoneOneRegularTTF,
 };

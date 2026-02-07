@@ -10,6 +10,9 @@ import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.j
 import { randFloat } from "three/src/math/MathUtils.js";
 import React from "react";
 import { RigidBody, type RigidBodyProps } from "@react-three/rapier";
+import { popSound, TIME_AFTER_DISAPPEAR } from "@/constants";
+import { useFrame } from "@react-three/fiber";
+import { useAudioManager } from "@/hooks";
 
 type GLTFResult = ReturnType<typeof useGLTF> & {
   nodes: {
@@ -22,22 +25,64 @@ type GLTFResult = ReturnType<typeof useGLTF> & {
 
 type Props = RigidBodyProps & {
   color: React.CSSProperties["color"];
+  onHit?: () => void;
+  hit?: boolean;
 };
 
-export const Hexagon = ({ color, ...props }: Props) => {
+export const Hexagon = ({ color, onHit = () => {}, hit = false, ...props }: Props) => {
+  const [disabled, setDisabled] = React.useState(false);
+
+  const hexagonMaterial = React.useRef<THREE.MeshStandardMaterial>(null);
+
   const { nodes, materials } = useGLTF(HexagonGLB, DracoPath, true, (loader) =>
     loader.setMeshoptDecoder(MeshoptDecoder),
   ) as GLTFResult;
+
   const randomizedColor = React.useMemo(() => {
     const alteredColor = new THREE.Color(color);
     alteredColor.multiplyScalar(randFloat(0.5, 1.2));
     return alteredColor;
   }, [color]);
 
+  const { playAudio } = useAudioManager();
+
+  useFrame((_, delta) => {
+    if (!hit || disabled || !hexagonMaterial.current) return;
+    hexagonMaterial.current.opacity = THREE.MathUtils.lerp(
+      hexagonMaterial.current.opacity,
+      0,
+      delta * 1.2,
+    );
+  });
+
+  React.useEffect(() => {
+    if (hit) {
+      setTimeout(() => setDisabled(true), TIME_AFTER_DISAPPEAR);
+    }
+  }, [hit]);
+
+  if (disabled) return null;
+
   return (
-    <RigidBody type="fixed" name="hexagon" colliders="hull" {...props}>
+    <RigidBody
+      type="fixed"
+      name="hexagon"
+      colliders="hull"
+      {...props}
+      onCollisionEnter={(e) => {
+        const otherObject = e.other.rigidBodyObject;
+        if (!otherObject || otherObject.name !== "player") return;
+        playAudio(popSound(), true);
+        onHit();
+      }}
+    >
       <mesh geometry={nodes.Hexagon.geometry} material={materials.hexagon}>
-        <meshStandardMaterial {...materials.hexagon} color={randomizedColor} transparent />
+        <meshStandardMaterial
+          ref={hexagonMaterial}
+          {...materials.hexagon}
+          color={hit ? "orange" : randomizedColor}
+          transparent
+        />
       </mesh>
     </RigidBody>
   );

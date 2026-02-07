@@ -4,3 +4,4 @@ export * from "./experience";
 export * from "./hexagon";
 export * from "./game-arena";
 export * from "./character-controller";
+export * from "./podium";

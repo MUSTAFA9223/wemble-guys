@@ -5,16 +5,24 @@ Command: npx gltfjsx@6.5.3 src/assets/models/character.glb -o src/components/cha
 
 import * as THREE from "three";
 import React, { type JSX } from "react";
-import { useGLTF, useAnimations } from "@react-three/drei";
+import { useGLTF, useAnimations, Text } from "@react-three/drei";
 import { SkeletonUtils } from "three-stdlib";
-import { useGraph } from "@react-three/fiber";
-import { CharacterGLB, DracoPath } from "@/assets";
+import { useFrame, useGraph } from "@react-three/fiber";
+import { CharacterGLB, DracoPath, PaytoneOneRegularTTF } from "@/assets";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
-type ActionName = "dive" | "fall" | "idle" | "jump_up" | "jump_air" | "run" | "walk" | "wave";
+export type CharacterActionName =
+  | "dive"
+  | "fall"
+  | "idle"
+  | "jump_up"
+  | "jump_air"
+  | "run"
+  | "walk"
+  | "wave";
 
 interface GLTFAction extends THREE.AnimationClip {
-  name: ActionName;
+  name: CharacterActionName;
 }
 
 export type CharacterGLTF = ReturnType<typeof useGLTF> & {
@@ -34,11 +42,14 @@ export type CharacterGLTF = ReturnType<typeof useGLTF> & {
 
 type Props = JSX.IntrinsicElements["group"] & {
   color?: React.CSSProperties["color"];
-  animation?: ActionName;
+  animation?: CharacterActionName;
+  name?: string;
 };
 
-export const Character = ({ animation = "wave", color = "yellow", ...props }: Props) => {
+export const Character = ({ animation = "wave", color = "yellow", name, ...props }: Props) => {
   const group = React.useRef<THREE.Group>(null);
+  const textRef = React.useRef<THREE.Group>(null);
+
   const { scene, animations } = useGLTF(CharacterGLB, DracoPath, true, (loader) => {
     loader.setMeshoptDecoder(MeshoptDecoder);
   });
@@ -55,8 +66,38 @@ export const Character = ({ animation = "wave", color = "yellow", ...props }: Pr
     };
   }, [animation]);
 
+  useFrame(({ camera }) => {
+    const text = textRef.current;
+    if (!text) return;
+    text.lookAt(camera.position);
+  });
+
   return (
     <group ref={group} {...props} dispose={null}>
+      <group ref={textRef}>
+        <Text
+          position-y={2.8}
+          fontSize={0.5}
+          anchorX="center"
+          anchorY="middle"
+          font={PaytoneOneRegularTTF}
+        >
+          {name}
+          <meshBasicMaterial color="white" />
+        </Text>
+        <Text
+          position-y={2.78}
+          position-x={0.02}
+          position-z={-0.02}
+          fontSize={0.5}
+          anchorX="center"
+          anchorY="middle"
+          font={PaytoneOneRegularTTF}
+        >
+          {name}
+          <meshBasicMaterial color="black" />
+        </Text>
+      </group>
       <group name="Scene">
         <group name="fall_guys">
           <primitive object={nodes._rootJoint} />
