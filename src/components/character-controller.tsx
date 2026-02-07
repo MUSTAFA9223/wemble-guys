@@ -158,7 +158,7 @@ export const CharacterController = ({
       ref={rb}
       {...props}
       key={stage}
-      position={stage === "game" ? [startingPos.x, 0.5, startingPos.z] : [0, 2.3, 0]} // BUG: set full position array
+      position={stage !== "lobby" ? [startingPos.x, 0.5, startingPos.z] : [0, 2.3, 0]} // BUG: set full position array
       colliders={false}
       enabledRotations={[false, true, false]}
       gravityScale={stage === "game" ? 2.5 : 0}
