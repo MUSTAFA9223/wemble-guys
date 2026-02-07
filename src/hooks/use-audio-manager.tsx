@@ -6,7 +6,7 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
-import { BgMP3 } from "../assets";
+import { BgMP3 } from "@/assets";
 
 /* ---------- Types ---------- */
 
