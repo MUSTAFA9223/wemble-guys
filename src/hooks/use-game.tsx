@@ -38,7 +38,7 @@ export interface GameJoyStick extends Joystick {
 }
 export interface GamePlayerState extends PlayerState {
   getState<K extends keyof PlayerStateKeyMap>(key: K): PlayerStateKeyMap[K] | undefined;
-  setState<K extends keyof PlayerStateKeyMap>(key: K,value:PlayerStateKeyMap[K]): void;
+  setState<K extends keyof PlayerStateKeyMap>(key: K, value: PlayerStateKeyMap[K]): void;
 }
 
 type Player = {

@@ -28,7 +28,6 @@ export const Hexagon = ({ color, ...props }: Props) => {
   const { nodes, materials } = useGLTF(HexagonGLB, DracoPath, true, (loader) =>
     loader.setMeshoptDecoder(MeshoptDecoder),
   ) as GLTFResult;
-
   const randomizedColor = React.useMemo(() => {
     const alteredColor = new THREE.Color(color);
     alteredColor.multiplyScalar(randFloat(0.5, 1.2));
@@ -36,7 +35,7 @@ export const Hexagon = ({ color, ...props }: Props) => {
   }, [color]);
 
   return (
-    <RigidBody type="fixed" colliders="hull" {...props}>
+    <RigidBody type="fixed" name="hexagon" colliders="hull" {...props}>
       <mesh geometry={nodes.Hexagon.geometry} material={materials.hexagon}>
         <meshStandardMaterial {...materials.hexagon} color={randomizedColor} transparent />
       </mesh>

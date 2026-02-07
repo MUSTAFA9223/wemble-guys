@@ -18,6 +18,7 @@ export const Experience = () => {
           state={state}
           controls={controls}
           player={me.id === state.id}
+          stage={stage}
         />
       ))}
     </>

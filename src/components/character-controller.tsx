@@ -94,7 +94,7 @@ export const CharacterController = ({
     const eulerRot = euler().setFromQuaternion(quat(character.rotation()));
     characterVel.applyEuler(eulerRot);
 
-    if (jump || (interacted && controls.isPressed("jump") && !inAir.current && landed.current)) {
+    if ((jump || controls.isPressed("jump")) && !inAir.current && landed.current) {
       characterVel.y += JUMP_FORCE;
       inAir.current = true;
       landed.current = false;
@@ -120,11 +120,24 @@ export const CharacterController = ({
       colliders={false}
       enabledRotations={[false, true, false]}
       canSleep={false}
+      gravityScale={stage === "game" ? 2.5 : 0}
+      onCollisionEnter={(e) => {
+        const otherObject = e.other.rigidBodyObject;
+        const character = rb.current;
+        if (!otherObject || !character) return;
+        if (otherObject.name === "hexagon") {
+          inAir.current = false;
+          landed.current = true;
+          const curVel = character.linvel();
+          curVel.y = 0;
+          character.setLinvel(curVel, true);
+        }
+      }}
     >
       <CapsuleCollider args={[0.1, 0.31]} position={[0, 0.43, -0.017]} />
       <Character
         scale={0.42}
-        color={state.getProfile().color.hexString}
+        color={state.getProfile().color?.hexString}
         name={state.getProfile().name}
       />
     </RigidBody>
