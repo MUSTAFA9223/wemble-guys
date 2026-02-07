@@ -15,7 +15,7 @@ export const GameArena = () => {
       position-z={-((NB_ROWS - 1) / 2) * HEX_Z_SPACING}
     >
       {/* HEXAGONS */}
-      {FLOORS.map(({color}, floorIndex) => (
+      {FLOORS.map(({ color }, floorIndex) => (
         <group key={floorIndex} position-y={floorIndex * -FLOOR_HEIGHT}>
           {[...Array(NB_ROWS)].map((_, rowIndex) => (
             <group
@@ -24,11 +24,7 @@ export const GameArena = () => {
               position-x={rowIndex % 2 ? HEX_X_SPACING / 2 : 0}
             >
               {[...Array(NB_COLUMNS)].map((_, columnIndex) => (
-                <Hexagon
-                  key={columnIndex}
-                  position-x={columnIndex * HEX_X_SPACING}
-                  color={color}
-                />
+                <Hexagon key={columnIndex} position-x={columnIndex * HEX_X_SPACING} color={color} />
               ))}
             </group>
           ))}

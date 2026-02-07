@@ -32,11 +32,11 @@ export const Hexagon = ({ color, ...props }: Props) => {
   const randomizedColor = React.useMemo(() => {
     const alteredColor = new THREE.Color(color);
     alteredColor.multiplyScalar(randFloat(0.5, 1.2));
-    return alteredColor
+    return alteredColor;
   }, [color]);
 
   return (
-    <group {...props}>
+    <group {...props} dispose={null}>
       <mesh geometry={nodes.Hexagon.geometry} material={materials.hexagon}>
         <meshStandardMaterial {...materials.hexagon} color={randomizedColor} transparent />
       </mesh>

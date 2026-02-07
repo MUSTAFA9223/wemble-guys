@@ -1,18 +1,21 @@
 import { Canvas } from "@react-three/fiber";
-import { AudioManagerProvider } from "./hooks";
+import AppProvider from "@/hooks";
 import { Experience, UI } from "@/components";
 import { Loader } from "@react-three/drei";
+import { Physics } from "@react-three/rapier";
 
 const App = () => {
   return (
-    <AudioManagerProvider>
+    <AppProvider>
       <Loader />
       <Canvas shadows camera={{ position: [0, 16, 10], fov: 42 }}>
         <color attach="background" args={["#041c0b"]} />
-        <Experience />
+        <Physics debug>
+          <Experience />
+        </Physics>
       </Canvas>
       <UI />
-    </AudioManagerProvider>
+    </AppProvider>
   );
 };
 

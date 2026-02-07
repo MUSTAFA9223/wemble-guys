@@ -1,13 +1,47 @@
 import { LogoPNG } from "@/assets";
-import { useAudioManager } from "@/hooks";
+import { useAudioManager, useGame } from "@/hooks";
 
 export const UI = () => {
   const { audioEnabled, setAudioEnabled } = useAudioManager();
+  const { timer, startGame, host, stage, players } = useGame();
 
   return (
-    <main className={`pointer-events-none fixed inset-0 z-10 grid place-content-center`}>
-      <h2 className="absolute top-4 right-4 text-5xl font-black text-white">0</h2>
+    <main
+      className={`pointer-events-none fixed inset-0 z-10 grid place-content-center ${
+        stage === "lobby" ? "bg-black/40" : "bg-transparent"
+      } transition-colors duration-1000`}
+    >
+      <div className="absolute top-28 left-4 flex flex-col gap-4 md:top-4 md:left-1/2 md:-translate-x-1/2 md:flex-row">
+        {players.map((p) => {
+          const player = p.state.getProfile();
+          return (
+            <div key={p.state.id} className="flex flex-col items-center">
+              <img
+                className={`h-12 w-12 rounded-full ${
+                  p.state.getState("dead") ? "grayscale filter" : ""
+                }`}
+                src={player.photo}
+              />
+              <p className="max-w-20 truncate text-white">{player.name}</p>
+            </div>
+          );
+        })}
+      </div>
+      {timer >= 0 && (
+        <h2 className="absolute top-4 right-4 text-5xl font-black text-white">{timer}</h2>
+      )}
       <img src={LogoPNG} className="absolute top-4 left-4 w-28" />
+      {stage === "lobby" &&
+        (host ? (
+          <button
+            className="pointer-events-auto rounded-lg bg-linear-to-br from-orange-500 to-yellow-500 px-12 py-4 text-xl font-black text-white drop-shadow-lg transition-all duration-200 hover:opacity-80"
+            onClick={startGame}
+          >
+            START
+          </button>
+        ) : (
+          <p className="text-white italic">Waiting for the host to start the game...</p>
+        ))}
 
       <button
         className="pointer-events-auto absolute top-1/2 right-4 -translate-y-1/2"

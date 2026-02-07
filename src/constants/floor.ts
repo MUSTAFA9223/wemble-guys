@@ -6,6 +6,9 @@ export const FLOORS = [
     color: "yellow",
   },
   {
+    color: "blue",
+  },
+  {
     color: "green",
   },
   {
