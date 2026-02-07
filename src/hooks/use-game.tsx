@@ -1,5 +1,12 @@
 import { NEXT_STAGE, TIMER_STAGE, type StageKeyType } from "@/constants";
-import { isHost, Joystick, onPlayerJoin, useMultiplayerState, type PlayerState } from "playroomkit";
+import {
+  isHost,
+  Joystick,
+  myPlayer,
+  onPlayerJoin,
+  useMultiplayerState,
+  type PlayerState,
+} from "playroomkit";
 import React from "react";
 
 type GameContextType = {
@@ -8,6 +15,7 @@ type GameContextType = {
   host: boolean;
   players: Player[];
   startGame: () => void;
+  me: PlayerState;
 };
 
 const GameContext = React.createContext<GameContextType>({
@@ -15,6 +23,7 @@ const GameContext = React.createContext<GameContextType>({
   timer: -1,
   host: false,
   players: [],
+  me: myPlayer(),
   startGame: () => new Error("GameContext: Game is not initialized!"),
 });
 
@@ -37,6 +46,7 @@ export const GameProvider = ({ children }: Props) => {
   const [soloGame, setSoloGame] = React.useState(false);
 
   const host = isHost();
+  const me = myPlayer();
 
   const startGame = () => {
     setStage("countdown");
@@ -89,6 +99,7 @@ export const GameProvider = ({ children }: Props) => {
         host,
         players,
         startGame,
+        me,
       }}
     >
       {children}

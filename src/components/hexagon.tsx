@@ -4,12 +4,12 @@ Command: npx gltfjsx@6.5.3 src/assets/models/hexagon.glb -o src/components/hexag
 */
 
 import * as THREE from "three";
-import type { JSX } from "react";
 import { useGLTF } from "@react-three/drei";
 import { DracoPath, HexagonGLB } from "@/assets";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { randFloat } from "three/src/math/MathUtils.js";
 import React from "react";
+import { RapierRigidBody, RigidBody, type RigidBodyProps } from "@react-three/rapier";
 
 type GLTFResult = ReturnType<typeof useGLTF> & {
   nodes: {
@@ -20,11 +20,13 @@ type GLTFResult = ReturnType<typeof useGLTF> & {
   };
 };
 
-type Props = JSX.IntrinsicElements["group"] & {
+type Props = RigidBodyProps & {
   color: React.CSSProperties["color"];
 };
 
 export const Hexagon = ({ color, ...props }: Props) => {
+  const rb = React.useRef<RapierRigidBody>(null);
+
   const { nodes, materials } = useGLTF(HexagonGLB, "draco/gltf/", true, (loader) =>
     loader.setMeshoptDecoder(MeshoptDecoder),
   ) as GLTFResult;
@@ -36,11 +38,18 @@ export const Hexagon = ({ color, ...props }: Props) => {
   }, [color]);
 
   return (
-    <group {...props} dispose={null}>
+    <RigidBody
+      ref={rb}
+      type="fixed"
+      colliders="hull"
+      enabledRotations={[false, true, false]}
+      canSleep={false}
+      {...props}
+    >
       <mesh geometry={nodes.Hexagon.geometry} material={materials.hexagon}>
         <meshStandardMaterial {...materials.hexagon} color={randomizedColor} transparent />
       </mesh>
-    </group>
+    </RigidBody>
   );
 };
 
