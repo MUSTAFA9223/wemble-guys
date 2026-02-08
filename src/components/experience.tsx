@@ -17,6 +17,11 @@ export const Experience = () => {
     return players;
   }, [players, stage, me.id]);
 
+  const firstNonDeadPlayer = React.useMemo(
+    () => players.find((p) => !p.state.getState("dead")),
+    [players],
+  );
+
   return (
     <>
       <OrbitControls target={[0, 1, 0]} />
@@ -35,6 +40,7 @@ export const Experience = () => {
               controls={controls}
               player={me.id === state.id}
               stage={stage}
+              firstNonDeadPlayer={firstNonDeadPlayer?.state.id === state.id}
               position-y={2}
             />
           ))}
