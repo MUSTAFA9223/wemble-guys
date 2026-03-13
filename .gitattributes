@@ -42,3 +42,5 @@ Thumbs.db      binary
 *.draco         binary
 *.meshopt       binary
 *.bin           binary
+
+public/draco/** linguist-vendored
